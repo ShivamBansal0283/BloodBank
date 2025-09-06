@@ -1,0 +1,91 @@
+generator client { 
+  provider = "prisma-client-js" 
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum Role { 
+  ADMIN 
+  HOSPITAL 
+  PATIENT 
+}
+enum BloodGroup { 
+  A_POS 
+  A_NEG 
+  B_POS 
+  B_NEG 
+  AB_POS 
+  AB_NEG 
+  O_POS 
+  O_NEG 
+}
+enum AppointmentStatus { 
+  PENDING 
+  COMPLETED 
+  CANCELLED 
+}
+enum RequestStatus { 
+  PENDING 
+  FULFILLED 
+  REJECTED 
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(PATIENT)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model BloodBank {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  inventory Inventory[]
+}
+
+model Inventory {
+  id          String     @id @default(cuid())
+  bloodBank   BloodBank  @relation(fields: [bloodBankId], references: [id], onDelete: Cascade)
+  bloodBankId String
+  bloodGroup  BloodGroup
+  units       Int        @default(0)
+  @@unique([bloodBankId, bloodGroup])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  donorName   String
+  donorEmail  String
+  bloodGroup  BloodGroup
+  units       Int               @default(1)
+  scheduledAt DateTime
+  status      AppointmentStatus @default(PENDING)
+  createdAt   DateTime          @default(now())
+
+  Donation Donation[]
+}
+
+model Donation {
+  id            String       @id @default(cuid())
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id])
+  bloodGroup    BloodGroup
+  units         Int          @default(1)
+  receivedAt    DateTime     @default(now())
+}
+
+model Request {
+  id           String        @id @default(cuid())
+  requester    String
+  hospital     String
+  bloodGroup   BloodGroup
+  units        Int           @default(1)
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  fulfilledAt  DateTime?
+}
